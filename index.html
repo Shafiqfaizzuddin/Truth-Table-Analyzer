@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Truth Table Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .truth-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .truth-table th, .truth-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            min-width: 40px;
+        }
+        .truth-table th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        .truth-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .tautology {
+            background-color: #d4edda;
+        }
+        .contradiction {
+            background-color: #f8d7da;
+        }
+        .contingency {
+            background-color: #fff3cd;
+        }
+        .result-box {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .keypad button {
+            padding: 10px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .keypad button:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+        .keypad button.utility {
+            background-color: #6b7280;
+        }
+        .keypad button.utility:hover {
+            background-color: #4b5563;
+        }
+        .step-explanation {
+            background-color: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .operation-cell {
+            background-color: #f0fdf4;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <h1 class="text-3xl font-bold text-center text-blue-600 mb-6">Advanced Truth Table Analyzer</h1>
+        <p class="text-center mb-8 text-gray-600">Analyze logical expressions with detailed step-by-step truth tables</p>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="mb-4">
+                <label for="expression" class="block text-sm font-medium text-gray-700 mb-2">Logical Expression</label>
+                <input type="text" id="expression" class="w-full p-3 border border-gray-300 rounded-md text-lg" 
+                       placeholder="Example: (p ∧ q) → (p ∨ q)" value="(p ∧ q) → (p ∨ q)">
+                <p class="text-xs text-gray-500 mt-1">
+                    Use variables like p, q, r. Operators: ∧ (AND), ∨ (OR), ¬ (NOT), → (implies), ↔ (iff)
+                </p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Variables in Expression</label>
+                <div id="variables-container" class="flex flex-wrap gap-2">
+                    <!-- Variables will be added here automatically -->
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="generateTruthTable()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                    Generate Truth Table
+                </button>
+                <button onclick="showSteps = !showSteps; generateTruthTable()" id="toggleStepsBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">
+                    Show Steps
+                </button>
+            </div>
+            
+            <!-- Keypad for input -->
+            <div class="keypad mt-4">
+                <button onclick="addToExpression('p')">p</button>
+                <button onclick="addToExpression('q')">q</button>
+                <button onclick="addToExpression('r')">r</button>
+                <button onclick="addToExpression('s')">s</button>
+                <button onclick="addToExpression('¬')">¬</button>
+                <button onclick="addToExpression('∧')">∧</button>
+                <button onclick="addToExpression('∨')">∨</button>
+                <button onclick="addToExpression('→')">→</button>
+                <button onclick="addToExpression('↔')">↔</button>
+                <button onclick="addToExpression('(')">(</button>
+                <button onclick="addToExpression(')')">)</button>
+                <button onclick="addToExpression(' ')">Space</button>
+                <button onclick="backspace()" class="utility">⌫</button>
+                <button onclick="clearExpression()" class="utility">Clear</button>
+            </div>
+        </div>
+        
+        <div id="result-container" class="hidden">
+            <div id="result-box" class="result-box"></div>
+            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table id="truth-table" class="truth-table">
+                    <!-- Truth table will be generated here -->
+                </table>
+            </div>
+            <div id="steps-container" class="mt-4">
+                <!-- Step explanations will be added here -->
+            </div>
+        </div>
+        
+        <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">How to Use</h2>
+            <ul class="list-disc pl-5 space-y-2">
+                <li>Enter a logical expression using the input field or the keypad below</li>
+                <li>Use <strong>Show Steps</strong> button to toggle detailed step-by-step evaluation</li>
+                <li>The calculator shows intermediate steps of complex expressions</li>
+                <li>Results are color-coded: <span class="tautology px-2 rounded">tautology</span>, <span class="contradiction px-2 rounded">contradiction</span>, or <span class="contingency px-2 rounded">contingency</span></li>
+            </ul>
+            
+            <h3 class="text-lg font-semibold mt-6 mb-2">Examples:</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <button onclick="loadExample('p ∨ ¬p')" class="bg-gray-200 hover:bg-gray-300 p-2 rounded text-sm">p ∨ ¬p (Tautology)</button>
+                <button onclick="loadExample('p ∧ ¬p')" class="bg-gray-200 hover:bg-gray-300 p-2 rounded text-sm">p ∧ ¬p (Contradiction)</button>
+                <button onclick="loadExample('(p → q) ↔ (¬q → ¬p)')" class="bg-gray-200 hover:bg-gray-300 p-2 rounded text-sm">Contrapositive Law</button>
+                <button onclick="loadExample('¬(p ∧ q) ↔ (¬p ∨ ¬q)')" class="bg-gray-200 hover:bg-gray-300 p-2 rounded text-sm">De Morgan's Law</button>
+                <button onclick="loadExample('(p → q) ∧ (q → p)')" class="bg-gray-200 hover:bg-gray-300 p-2 rounded text-sm">Biconditional</button>
+                <button onclick="loadExample('(p ∨ q) ∧ (¬p ∨ r) → (q ∨ r)')" class="bg-gray-200 hover:bg-gray-300 p-2 rounded text-sm">Resolution Principle</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let showSteps = true;
+        
+        // Extract variables from expression
+        function extractVariables(expression) {
+            const variableRegex = /[a-zA-Z]/g;
+            const variables = new Set();
+            let match;
+            
+            while ((match = variableRegex.exec(expression)) !== null) {
+                if (match[0] !== 'v') { // Exclude 'v' from ∨ (OR)
+                    variables.add(match[0]);
+                }
+            }
+            
+            return Array.from(variables).sort();
+        }
+        
+        // Update variables display
+        function updateVariablesDisplay() {
+            const expression = document.getElementById('expression').value;
+            const variables = extractVariables(expression);
+            const container = document.getElementById('variables-container');
+            
+            container.innerHTML = '';
+            variables.forEach(variable => {
+                const badge = document.createElement('span');
+                badge.className = 'bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded';
+                badge.textContent = variable;
+                container.appendChild(badge);
+            });
+        }
+        
+        // Load example expression
+        function loadExample(expression) {
+            document.getElementById('expression').value = expression;
+            updateVariablesDisplay();
+        }
+        
+        // Add to expression input
+        function addToExpression(value) {
+            const expressionInput = document.getElementById('expression');
+            const cursorPos = expressionInput.selectionStart;
+            const currentValue = expressionInput.value;
+            
+            expressionInput.value = currentValue.substring(0, cursorPos) + value + currentValue.substring(cursorPos);
+            expressionInput.selectionStart = cursorPos + value.length;
+            expressionInput.selectionEnd = cursorPos + value.length;
+            expressionInput.focus();
+            
+            updateVariablesDisplay();
+        }
+        
+        // Backspace functionality
+        function backspace() {
+            const expressionInput = document.getElementById('expression');
+            const cursorPos = expressionInput.selectionStart;
+            const currentValue = expressionInput.value;
+            
+            if (cursorPos > 0) {
+                expressionInput.value = currentValue.substring(0, cursorPos - 1) + currentValue.substring(cursorPos);
+                expressionInput.selectionStart = cursorPos - 1;
+                expressionInput.selectionEnd = cursorPos - 1;
+                expressionInput.focus();
+                updateVariablesDisplay();
+            }
+        }
+        
+        // Clear expression input
+        function clearExpression() {
+            document.getElementById('expression').value = '';
+            updateVariablesDisplay();
+            document.getElementById('expression').focus();
+        }
+        
+        // Tokenize expression for step-by-step evaluation
+        function tokenizeExpression(expression) {
+            // This finds all operators, parentheses, and variables
+            const tokenRegex = /(∧|∨|→|↔|¬|\(|\)|[a-zA-Z])/g;
+            const tokens = [];
+            let match;
+            
+            while ((match = tokenRegex.exec(expression)) !== null) {
+                tokens.push({
+                    value: match[0],
+                    index: match.index
+                });
+            }
+            
+            return tokens;
+        }
+        
+        // Find all sub-expressions for step-by-step evaluation
+        function getSubExpressions(expression) {
+            const subExprs = [];
+            const tokens = tokenizeExpression(expression);
+            
+            // First find all parenthetical expressions
+            let stack = [];
+            for (let i = 0; i < tokens.length; i++) {
+                const token = tokens[i];
+                if (token.value === '(') {
+                    stack.push(i);
+                } else if (token.value === ')') {
+                    if (stack.length > 0) {
+                        const start = stack.pop();
+                        const subExpr = expression.substring(tokens[start].index, token.index + 1);
+                        subExprs.push(subExpr);
+                    }
+                }
+            }
+            
+            // Then find all operator-based expressions (working outwards)
+            const operators = ['¬', '∧', '∨', '→', '↔'];
+            for (const op of operators) {
+                for (let i = 0; i < tokens.length; i++) {
+                    if (tokens[i].value === op) {
+                        // For unary operator (¬)
+                        if (op === '¬' && i < tokens.length - 1) {
+                            const nextToken = tokens[i+1];
+                            let end = nextToken.index + 1;
+                            if (nextToken.value === '(') {
+                                // Find matching closing parenthesis
+                                let parenCount = 1;
+                                for (let j = i+2; j < tokens.length; j++) {
+                                    if (tokens[j].value === '(') parenCount++;
+                                    if (tokens[j].value === ')') parenCount--;
+                                    if (parenCount === 0) {
+                                        end = tokens[j].index + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            const subExpr = expression.substring(tokens[i].index, end);
+                            if (!subExprs.includes(subExpr)) {
+                                subExprs.push(subExpr);
+                            }
+                        }
+                        // For binary operators
+                        else if (op !== '¬') {
+                            let start = 0;
+                            let end = expression.length;
+                            
+                            // Look backward for start
+                            for (let j = i-1; j >= 0; j--) {
+                                if (tokens[j].value === ')') {
+                                    // Skip past this parenthetical
+                                    let parenCount = 1;
+                                    for (let k = j-1; k >= 0; k--) {
+                                        if (tokens[k].value === ')') parenCount++;
+                                        if (tokens[k].value === '(') parenCount--;
+                                        if (parenCount === 0) {
+                                            j = k;
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    start = tokens[j].index;
+                                    break;
+                                }
+                            }
+                            
+                            // Look forward for end
+                            for (let j = i+1; j < tokens.length; j++) {
+                                if (tokens[j].value === '(') {
+                                    // Skip past this parenthetical
+                                    let parenCount = 1;
+                                    for (let k = j+1; k < tokens.length; k++) {
+                                        if (tokens[k].value === '(') parenCount++;
+                                        if (tokens[k].value === ')') parenCount--;
+                                        if (parenCount === 0) {
+                                            j = k;
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    end = tokens[j].index + 1;
+                                    break;
+                                }
+                            }
+                            
+                            const subExpr = expression.substring(start, end);
+                            if (!subExprs.includes(subExpr)) {
+                                subExprs.push(subExpr);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return subExprs.sort((a, b) => a.length - b.length);
+        }
+        
+        // Evaluate a logical expression for given variable values
+        function evaluateExpression(expr, values) {
+            let evalStr = expr;
+            
+            // Replace variables with their values
+            for (const variable in values) {
+                evalStr = evalStr.replace(new RegExp(variable, 'g'), values[variable] ? 'true' : 'false');
+            }
+            
+            // Replace logical operators with JavaScript equivalents
+            evalStr = evalStr.replace(/∧/g, '&&')
+                            .replace(/∨/g, '||')
+                            .replace(/¬/g, '!')
+                            .replace(/→/g, '<=')
+                            .replace(/↔/g, '===');
+            
+            try {
+                return eval(evalStr);
+            } catch (e) {
+                console.error("Error evaluating expression:", e);
+                return false;
+            }
+        }
+        
+        // Generate all possible combinations of truth values for variables
+        function generateCombinations(variables) {
+            const combinations = [];
+            const count = Math.pow(2, variables.length);
+            
+            for (let i = 0; i < count; i++) {
+                const combination = {};
+                for (let j = 0; j < variables.length; j++) {
+                    combination[variables[j]] = !!(i & (1 << (variables.length - 1 - j)));
+                }
+                combinations.push(combination);
+            }
+            
+            return combinations;
+        }
+        
+        // Generate and display the truth table with step-by-step evaluation
+        function generateTruthTable() {
+            const expression = document.getElementById('expression').value.trim();
+            if (!expression) {
+                alert('Please enter a logical expression');
+                return;
+            }
+            
+            const variables = extractVariables(expression);
+            if (variables.length === 0) {
+                alert('No variables found in the expression');
+                return;
+            }
+            
+            const combinations = generateCombinations(variables);
+            const table = document.getElementById('truth-table');
+            const resultBox = document.getElementById('result-box');
+            const resultContainer = document.getElementById('result-container');
+            const stepsContainer = document.getElementById('steps-container');
+            
+            // Clear previous results
+            table.innerHTML = '';
+            stepsContainer.innerHTML = '';
+            resultContainer.classList.remove('hidden');
+            
+            // Get all sub-expressions for step-by-step evaluation
+            const subExpressions = showSteps ? getSubExpressions(expression) : [];
+            subExpressions.push(expression); // Add the full expression
+            
+            // Create table header
+            const headerRow = document.createElement('tr');
+            
+            // Add variables headers
+            variables.forEach(variable => {
+                const th = document.createElement('th');
+                th.textContent = variable;
+                headerRow.appendChild(th);
+            });
+            
+            // Add sub-expression headers
+            subExpressions.forEach(expr => {
+                const th = document.createElement('th');
+                th.textContent = expr;
+                if (expr.length > 15) {
+                    th.title = expr;
+                    th.textContent = "...";
+                }
+                if (expr !== expression) {
+                    th.classList.add('operation-cell');
+                }
+                headerRow.appendChild(th);
+            });
+            
+            table.appendChild(headerRow);
+            
+            // Evaluate expression for each combination
+            let allTrue = true;
+            let allFalse = true;
+            
+            combinations.forEach(combination => {
+                const row = document.createElement('tr');
+                
+                // Add variable values
+                variables.forEach(variable => {
+                    const td = document.createElement('td');
+                    td.textContent = combination[variable] ? 'T' : 'F';
+                    row.appendChild(td);
+                });
+                
+                // Evaluate each sub-expression
+                const results = [];
+                subExpressions.forEach(subExpr => {
+                    const result = evaluateExpression(subExpr, combination);
+                    results.push(result);
+                    const resultTd = document.createElement('td');
+                    resultTd.textContent = result ? 'T' : 'F';
+                    row.appendChild(resultTd);
+                });
+                
+                if (!results[results.length - 1]) allTrue = false;
+                if (results[results.length - 1]) allFalse = false;
+                
+                table.appendChild(row);
+            });
+            
+            // Determine and display the result
+            if (allTrue) {
+                resultBox.textContent = 'This expression is a TAUTOLOGY (always true)';
+                resultBox.className = 'result-box tautology';
+            } else if (allFalse) {
+                resultBox.textContent = 'This expression is a CONTRADICTION (always false)';
+                resultBox.className = 'result-box contradiction';
+            } else {
+                resultBox.textContent = 'This expression is a CONTINGENCY (depends on variable values)';
+                resultBox.className = 'result-box contingency';
+            }
+            
+            // Display step-by-step evaluation if enabled
+            if (showSteps) {
+                subExpressions.forEach((subExpr, index) => {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'step-explanation';
+                    stepDiv.textContent = `Step ${index + 1}: Evaluate "${subExpr}" for all combinations.`;
+                    stepsContainer.appendChild(stepDiv);
+                });
+            }
+        }
+        
+        // Initialize
+        document.getElementById('expression').addEventListener('input', updateVariablesDisplay);
+        updateVariablesDisplay();
+    </script>
+</body>
+</html>
